@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK (Optimized)
 
 on:
   push:
@@ -8,8 +8,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      ANDROID_HOME: ${{ github.workspace }}/android-sdk
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
 
     steps:
     - name: Checkout repo
@@ -20,21 +22,56 @@ jobs:
       with:
         python-version: '3.10'
 
+    # ✅ 缓存 buildozer（超级关键，加速很多）
+    - name: Cache buildozer
+      uses: actions/cache@v4
+      with:
+        path: |
+          .buildozer
+          ~/.buildozer
+        key: buildozer-${{ hashFiles('buildozer.spec') }}
+
+    # ✅ 缓存 Android SDK
+    - name: Cache Android SDK
+      uses: actions/cache@v4
+      with:
+        path: android-sdk
+        key: android-sdk-v1
+
     - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential python3-dev git \
           libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev \
-          default-jdk unzip pkg-config python3-pip
+          default-jdk unzip pkg-config python3-pip wget
 
     - name: Install Python dependencies
       run: |
         pip install --upgrade pip
         pip install buildozer kivy cython
 
-    # ✅ 关键新增步骤（必须有）
-    - name: Accept Android licenses and install SDK
+    # ✅ 安装 SDK（只在缓存不存在时执行）
+    - name: Install Android SDK
+      if: steps.cache-android-sdk.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p $ANDROID_HOME/cmdline-tools
+        cd $ANDROID_HOME/cmdline-tools
+
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
+        unzip tools.zip
+        rm tools.zip
+
+        mv cmdline-tools latest
+
+    # ✅ 设置 PATH
+    - name: Set Android PATH
+      run: |
+        echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+        echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+
+    # ✅ 接受 license + 安装组件
+    - name: Setup Android SDK packages
       run: |
         yes | sdkmanager --licenses
         sdkmanager --update
@@ -42,7 +79,7 @@ jobs:
         sdkmanager "platforms;android-33"
         sdkmanager "build-tools;33.0.2"
 
-    - name: Initialize Buildozer / Python-for-Android
+    - name: Initialize Buildozer
       run: |
         buildozer android update
 
@@ -50,8 +87,8 @@ jobs:
       run: |
         buildozer -v android debug
 
-    - name: Upload APK artifact
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: OvertimeTracker-apk
+        name: apk
         path: bin/*.apk
