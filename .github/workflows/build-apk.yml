@@ -1,4 +1,4 @@
-name: Build APK (FINAL STABLE)
+name: Build APK (Final Stable)
 
 on:
   push:
@@ -10,15 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
+    - name: Checkout repo
       uses: actions/checkout@v4
 
-    - name: Setup Python
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
-    - name: Install dependencies
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -27,22 +27,20 @@ jobs:
           libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
           libportmidi-dev
 
-    - name: Install Python tools
+    - name: Install Python dependencies
       run: |
         pip install --upgrade pip
         pip install buildozer cython kivy
 
-    - name: Accept Android licenses
-      run: |
-        mkdir -p $HOME/android-sdk
-        export ANDROID_HOME=$HOME/android-sdk
-        yes | sdkmanager --licenses || true
-
+    # 🔥 关键：避免所有交互卡死
     - name: Build APK
       run: |
-        buildozer android clean
-        buildozer -v android debug
+        export DEBIAN_FRONTEND=noninteractive
 
+        yes | buildozer android clean
+        yes | buildozer -v android debug
+
+    # 📦 上传 APK
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
