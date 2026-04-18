@@ -1,4 +1,4 @@
-name: Build APK (Docker Stable Ultimate)
+name: Build APK (Docker Ultimate Stable)
 
 on:
   push:
@@ -10,17 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # 📥 拉代码
     - name: Checkout repo
       uses: actions/checkout@v4
 
-    # 🚀 使用稳定 buildozer Docker 镜像
-    - name: Build APK with Docker Buildozer
+    # 🚀 Docker Buildozer 构建（已解决 root / 交互 / SDK 问题）
+    - name: Build APK (Docker)
       run: |
         docker run --rm \
           -v $PWD:/home/user/app \
           -w /home/user/app \
+          -e BUILDOZER_ALLOW_ROOT=1 \
           kivy/buildozer:latest \
           bash -lc "
+            export BUILDOZER_ALLOW_ROOT=1 &&
             pip install --upgrade pip &&
             buildozer android clean &&
             buildozer android debug
