@@ -1,4 +1,4 @@
-name: Build APK (Stable Android Fix)
+name: Build APK (FINAL STABLE FIX)
 
 on:
   push:
@@ -22,53 +22,57 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install dependencies
+    - name: Install system deps
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          git zip unzip openjdk-17-jdk \
+          git zip unzip wget openjdk-17-jdk \
           python3-pip build-essential \
           libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
 
-    - name: Install Python tools
+    - name: Install Buildozer
       run: |
         pip install --upgrade pip
         pip install buildozer cython kivy
 
-    # 🔥 安装 Android SDK（关键修复）
+    # 🚀 安装 Android SDK（关键修复）
     - name: Install Android SDK
       run: |
         mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
         cd $ANDROID_SDK_ROOT
 
-        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
-        unzip tools.zip -d cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O sdk.zip
+        unzip sdk.zip -d cmdline-tools
+
         mv cmdline-tools/cmdline-tools cmdline-tools/latest
 
         echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
 
-    # 🔥 强制接受 license + 锁版本（核心）
-    - name: Setup SDK packages
+    # 🔥 强制接受 license + 禁止卡住
+    - name: Accept Android Licenses
       run: |
         yes | sdkmanager --licenses || true
 
+    # 🔥 必须锁版本（解决 37）
+    - name: Install SDK packages
+      run: |
         sdkmanager "platform-tools"
         sdkmanager "platforms;android-33"
         sdkmanager "build-tools;33.0.2"
 
-    # 🔥 清理 buildozer（防止残留37）
-    - name: Clean buildozer
+    # 🔥 防止 buildozer cache 干扰
+    - name: Clean environment
       run: |
         rm -rf .buildozer
         rm -rf ~/.buildozer
 
-    # 🔥 构建 APK
+    # 🚀 构建 APK
     - name: Build APK
       run: |
-        buildozer android debug
+        buildozer -v android debug
 
-    # 📦 上传
+    # 📦 上传 APK
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
