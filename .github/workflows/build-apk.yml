@@ -1,4 +1,4 @@
-name: Build APK (FINAL STABLE FIX)
+name: Build APK (NO 37 FIX)
 
 on:
   push:
@@ -22,20 +22,19 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install system deps
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          git zip unzip wget openjdk-17-jdk \
-          python3-pip build-essential \
-          libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
+          git unzip wget openjdk-17-jdk \
+          python3-pip build-essential
 
     - name: Install Buildozer
       run: |
         pip install --upgrade pip
         pip install buildozer cython kivy
 
-    # 🚀 安装 Android SDK（关键修复）
+    # 🔥 安装 SDK
     - name: Install Android SDK
       run: |
         mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
@@ -49,30 +48,30 @@ jobs:
         echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
 
-    # 🔥 强制接受 license + 禁止卡住
-    - name: Accept Android Licenses
+    # 🔥 强制接受 license（关键）
+    - name: Accept licenses
       run: |
         yes | sdkmanager --licenses || true
 
-    # 🔥 必须锁版本（解决 37）
-    - name: Install SDK packages
+    # 🚨 核心修复：强制只允许 33，不让 37出现
+    - name: Install ONLY stable SDK
       run: |
-        sdkmanager "platform-tools"
-        sdkmanager "platforms;android-33"
-        sdkmanager "build-tools;33.0.2"
+        sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools"
+        sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platforms;android-33"
+        sdkmanager --sdk_root=$ANDROID_SDK_ROOT "build-tools;33.0.2"
 
-    # 🔥 防止 buildozer cache 干扰
-    - name: Clean environment
+    # 🔥 防缓存污染
+    - name: Clean
       run: |
         rm -rf .buildozer
         rm -rf ~/.buildozer
 
-    # 🚀 构建 APK
+    # 🚀 Build
     - name: Build APK
       run: |
         buildozer -v android debug
 
-    # 📦 上传 APK
+    # 📦 Upload
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
