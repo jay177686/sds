@@ -1,4 +1,4 @@
-name: Build APK (Stable)
+name: Build APK (Stable Fixed)
 
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
         pip install --upgrade pip
         pip install buildozer kivy cython
 
-    # 🔥 安装 Android SDK（必须）
+    # 🔥 安装 Android SDK cmdline-tools
     - name: Install Android SDK cmdline-tools
       run: |
         mkdir -p $ANDROID_HOME/cmdline-tools
@@ -50,24 +50,33 @@ jobs:
         echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
         echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
 
-    # 🔥 安装 SDK + license
+    # 🔥 清理 + 防止 37 残留（关键新增）
+    - name: Clean build environment
+      run: |
+        rm -rf ~/.buildozer
+        rm -rf .buildozer
+
+    # 🔥 安装 SDK + 强制锁版本（彻底解决 37）
     - name: Setup Android SDK
       run: |
-        yes | sdkmanager --licenses
+        yes | sdkmanager --licenses || true
         sdkmanager --update
+
         sdkmanager "platform-tools"
         sdkmanager "platforms;android-33"
         sdkmanager "build-tools;33.0.2"
 
-    # 🔥 Buildozer（重点：不要缓存！不要 clean 乱用）
+    # 🔥 Buildozer 初始化
     - name: Initialize Buildozer
       run: |
+        buildozer android clean
         buildozer android update
 
     - name: Build APK
       run: |
         buildozer -v android debug
 
+    # 🔥 输出 APK
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
