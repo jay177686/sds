@@ -1,4 +1,4 @@
-name: Build APK (Docker Stable)
+name: Build APK (Docker Stable Ultimate)
 
 on:
   push:
@@ -11,18 +11,22 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    # 🔥 用 Docker 官方 Buildozer 环境
-    - name: Build APK with Buildozer Docker
+    # 🚀 使用稳定 buildozer Docker 镜像
+    - name: Build APK with Docker Buildozer
       run: |
         docker run --rm \
-          -v $PWD:/home/user/hostcwd \
-          -w /home/user/hostcwd \
+          -v $PWD:/home/user/app \
+          -w /home/user/app \
           kivy/buildozer:latest \
-          buildozer android debug
+          bash -lc "
+            pip install --upgrade pip &&
+            buildozer android clean &&
+            buildozer android debug
+          "
 
-    # 🔥 上传 APK
+    # 📦 上传 APK
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
