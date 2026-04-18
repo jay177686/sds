@@ -1,4 +1,4 @@
-name: Build APK (Final Fix P4A)
+name: Build APK (Stable Android Fix)
 
 on:
   push:
@@ -9,8 +9,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
+      ANDROID_HOME: ${{ github.workspace }}/android-sdk
+
     steps:
-    - name: Checkout repo
+    - name: Checkout
       uses: actions/checkout@v4
 
     - name: Setup Python
@@ -22,24 +26,49 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          build-essential git python3-pip \
-          openjdk-17-jdk unzip wget \
+          git zip unzip openjdk-17-jdk \
+          python3-pip build-essential \
           libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev
 
-    - name: Install buildozer
+    - name: Install Python tools
       run: |
         pip install --upgrade pip
         pip install buildozer cython kivy
 
-    # 🔥 关键修复：只 build，不 clean
+    # 🔥 安装 Android SDK（关键修复）
+    - name: Install Android SDK
+      run: |
+        mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+        cd $ANDROID_SDK_ROOT
+
+        wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O tools.zip
+        unzip tools.zip -d cmdline-tools
+        mv cmdline-tools/cmdline-tools cmdline-tools/latest
+
+        echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+        echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+
+    # 🔥 强制接受 license + 锁版本（核心）
+    - name: Setup SDK packages
+      run: |
+        yes | sdkmanager --licenses || true
+
+        sdkmanager "platform-tools"
+        sdkmanager "platforms;android-33"
+        sdkmanager "build-tools;33.0.2"
+
+    # 🔥 清理 buildozer（防止残留37）
+    - name: Clean buildozer
+      run: |
+        rm -rf .buildozer
+        rm -rf ~/.buildozer
+
+    # 🔥 构建 APK
     - name: Build APK
       run: |
-        export DEBIAN_FRONTEND=noninteractive
+        buildozer android debug
 
-        mkdir -p .buildozer
-
-        buildozer -v android debug
-
+    # 📦 上传
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
