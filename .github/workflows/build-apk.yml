@@ -1,4 +1,4 @@
-name: Build APK (Docker Ultimate Stable)
+name: Build APK (Docker Ultimate Fix)
 
 on:
   push:
@@ -10,26 +10,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # 📥 拉代码
     - name: Checkout repo
       uses: actions/checkout@v4
 
-    # 🚀 Docker Buildozer 构建（已解决 root / 交互 / SDK 问题）
+    # 🚀 关键修复：禁用交互 + root检查
     - name: Build APK (Docker)
       run: |
         docker run --rm \
           -v $PWD:/home/user/app \
           -w /home/user/app \
-          -e BUILDOZER_ALLOW_ROOT=1 \
           kivy/buildozer:latest \
           bash -lc "
-            export BUILDOZER_ALLOW_ROOT=1 &&
+            export BUILDOZER_WARN_ON_ROOT=0 &&
+            export PIP_NO_INPUT=1 &&
             pip install --upgrade pip &&
             buildozer android clean &&
-            buildozer android debug
+            buildozer -v android debug --noinput
           "
 
-    # 📦 上传 APK
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
