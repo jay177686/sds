@@ -12,3 +12,4 @@ version = 1.0
 android.api = 33
 android.sdk = 33
 android.ndk = 25b
+android.build_tools = 33.0.2
