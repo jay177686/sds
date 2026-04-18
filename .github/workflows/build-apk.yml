@@ -33,6 +33,15 @@ jobs:
         pip install --upgrade pip
         pip install buildozer kivy cython
 
+    # ✅ 关键新增步骤（必须有）
+    - name: Accept Android licenses and install SDK
+      run: |
+        yes | sdkmanager --licenses
+        sdkmanager --update
+        sdkmanager "platform-tools"
+        sdkmanager "platforms;android-33"
+        sdkmanager "build-tools;33.0.2"
+
     - name: Initialize Buildozer / Python-for-Android
       run: |
         buildozer android update
