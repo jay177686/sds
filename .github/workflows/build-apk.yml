@@ -31,7 +31,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         pip install --upgrade pip
-        pip install buildozer kivy
+        pip install buildozer kivy cython
 
     - name: Initialize Buildozer / Python-for-Android
       run: |
